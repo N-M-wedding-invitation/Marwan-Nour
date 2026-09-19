@@ -36,7 +36,6 @@
 
   h1,h2,.serif{ font-family:'Cormorant Garamond', serif; }
 
-  /* ============ STAGE (3D envelope screen) ============ */
   #stage{
     position:fixed; inset:0;
     width:100%; height:100vh; height:var(--vh);
@@ -54,7 +53,6 @@
   #canvas-wrap{ position:absolute; inset:0; }
   canvas{ display:block; width:100%; height:100%; touch-action:none; }
 
-  /* fine gold corner framing — the one bold flourish */
   .frame{
     position:absolute; inset:18px;
     border:1px solid var(--hair);
@@ -79,9 +77,7 @@
     background:radial-gradient(circle at 50% 52%, rgba(230,197,140,0.95) 0%, rgba(230,197,140,0.35) 32%, rgba(230,197,140,0) 62%);
     mix-blend-mode:screen;
   }
-  #flash.fire{
-    animation: flashburst 1.05s cubic-bezier(.3,0,.2,1) forwards;
-  }
+  #flash.fire{ animation: flashburst 1.05s cubic-bezier(.3,0,.2,1) forwards; }
   @keyframes flashburst{
     0%{ opacity:0; }
     28%{ opacity:1; }
@@ -113,7 +109,6 @@
     transition:width .25s ease;
   }
 
-  /* ============ INVITATION ============ */
   #invite{
     position:relative;
     z-index:10;
@@ -243,7 +238,6 @@
     opacity:.8;
   }
 
-  /* music toggle */
   #sound-btn{
     position:fixed; right:20px; bottom:20px;
     width:46px; height:46px;
@@ -277,7 +271,6 @@
 </head>
 <body class="locked">
 
-  <!-- ================= 3D ENVELOPE STAGE ================= -->
   <div id="stage">
     <div id="canvas-wrap"></div>
     <div class="frame"></div>
@@ -288,7 +281,6 @@
     </div>
   </div>
 
-  <!-- ================= INVITATION ================= -->
   <main id="invite">
     <section class="section hero">
       <p class="kicker">The Wedding Of</p>
@@ -334,7 +326,8 @@
     <span class="bar"></span><span class="bar"></span><span class="bar"></span>
   </button>
 
-  <audio id="bg-music" src="/music/wedding-music.mp3" loop preload="auto"></audio>
+  <!-- Use a relative URL so the song also works when deployed under /NandM/ on GitHub Pages. -->
+  <audio id="bg-music" src="./music/journeys-dawn.mp3" loop preload="auto"></audio>
 
 <script type="importmap">
 {
@@ -350,12 +343,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 
-/* ---------- Google Maps link ---------- */
 document.getElementById('map-btn').href =
   "https://www.google.com/maps/search/?api=1&query=" +
   encodeURIComponent("Princess Garden Hall, Damanhour, Al Beheira, Egypt");
 
-/* ---------- Countdown ---------- */
 const WEDDING_DATE = new Date("2026-09-22T18:00:00+02:00").getTime();
 function tick(){
   const now = Date.now();
@@ -372,11 +363,9 @@ function tick(){
 }
 tick(); setInterval(tick, 1000);
 
-/* ---------- viewport height fix (mobile) ---------- */
 function setVH(){ document.documentElement.style.setProperty('--vh', window.innerHeight+'px'); }
 setVH(); window.addEventListener('resize', setVH);
 
-/* ---------- Three.js stage ---------- */
 const wrap = document.getElementById('canvas-wrap');
 const stage = document.getElementById('stage');
 const loaderEl = document.getElementById('loader');
@@ -395,8 +384,6 @@ const camera = new THREE.PerspectiveCamera(32, window.innerWidth/window.innerHei
 const camHome = new THREE.Vector3(0, 0.35, 6.4);
 const camOpen = new THREE.Vector3(0, 0.15, 3.55);
 
-// the envelope is a wide landscape card — on a narrow phone screen the camera
-// needs to sit closer (or the card reads small and lost in negative space).
 function tuneCameraForViewport(){
   const aspect = window.innerWidth / window.innerHeight;
   const zoomFactor = aspect < 0.62 ? 0.66 : aspect < 0.85 ? 0.8 : 1;
@@ -417,7 +404,6 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 wrap.appendChild(renderer.domElement);
 
-/* lighting — warm, cinematic, single key + soft fill */
 const key = new THREE.DirectionalLight(0xf3d9a6, 2.4);
 key.position.set(2.6, 4.2, 3.2);
 key.castShadow = true;
@@ -433,7 +419,6 @@ scene.add(rim);
 const fill = new THREE.AmbientLight(0x3a2f22, 0.9);
 scene.add(fill);
 
-/* soft shadow-catcher */
 const shadowMat = new THREE.ShadowMaterial({ opacity:0.35 });
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(30,30), shadowMat);
 ground.rotation.x = -Math.PI/2;
@@ -441,13 +426,11 @@ ground.position.y = -1.15;
 ground.receiveShadow = true;
 scene.add(ground);
 
-/* envelope group */
 const envelopeGroup = new THREE.Group();
 scene.add(envelopeGroup);
 
 let mixer = null;
 let openClipAction = null;
-let flapNode = null;
 
 const draco = new DRACOLoader();
 draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
@@ -455,18 +438,16 @@ const loader = new GLTFLoader();
 loader.setDRACOLoader(draco);
 
 loader.load(
-  '/models/envelope.glb',
+  './models/envelope.glb',
   (gltf) => {
     const model = gltf.scene;
     model.traverse(o=>{
       if(o.isMesh){
         o.castShadow = true;
         o.receiveShadow = true;
-        if(/flap|lid|top|seal/i.test(o.name)) flapNode = o;
       }
     });
 
-    // normalize scale/position so it fills the frame nicely
     const box = new THREE.Box3().setFromObject(model);
     const size = new THREE.Vector3(); box.getSize(size);
     const center = new THREE.Vector3(); box.getCenter(center);
@@ -494,20 +475,16 @@ loader.load(
     }
   },
   (err) => {
-    console.warn('Envelope model failed to load — replace /models/envelope.glb', err);
+    console.warn('Envelope model failed to load.', err);
     loaderEl.classList.add('done');
   }
 );
 
-/* idle animation state */
 const clock = new THREE.Clock();
 let idleT = 0;
-
-/* simple tween helper */
 function lerp(a,b,t){ return a + (b-a)*t; }
 let camT = 0, camAnimating = false, camFrom = camHome.clone(), camTo = camHome.clone();
 let camDuration = 1;
-
 let liftAnimating = false, liftT = 0, liftDuration = 1.05;
 let liftFrom = { rx:0, ry:0, y:0, s:1 };
 let liftTo   = { rx:0, ry:0, y:0, s:1 };
@@ -538,7 +515,7 @@ function render(){
     envelopeGroup.rotation.x = lerp(liftFrom.rx, liftTo.rx, e);
     envelopeGroup.rotation.y = lerp(liftFrom.ry, liftTo.ry, e);
     envelopeGroup.position.y = lerp(liftFrom.y, liftTo.y, e);
-    const s = lerp(liftFrom.s, liftTo.s, Math.sin(e*Math.PI)); // bump up then settle
+    const s = lerp(liftFrom.s, liftTo.s, Math.sin(e*Math.PI));
     envelopeGroup.scale.setScalar(s);
     if(t>=1) liftAnimating = false;
   }
@@ -552,7 +529,6 @@ function render(){
     if(t>=1) camAnimating = false;
   }
   camera.lookAt(0, -0.05, 0);
-
   renderer.render(scene, camera);
 }
 render();
@@ -564,7 +540,6 @@ window.addEventListener('resize', ()=>{
   tuneCameraForViewport();
 });
 
-/* ---------- Open interaction ---------- */
 const music = document.getElementById('bg-music');
 const soundBtn = document.getElementById('sound-btn');
 let musicOn = true;
@@ -584,12 +559,8 @@ function openEnvelope(){
   if(opened || opening || !modelReady) return;
   opening = true;
 
-  // 1. music
   music.play().then(()=> fadeAudioIn(music)).catch(()=>{});
 
-  // 2. opening animation — embedded clip if the GLB has one, otherwise a
-  //    gentle lift-and-tilt of the whole envelope (this asset is a single
-  //    closed card with no separate flap geometry).
   if(openClipAction){
     openClipAction.reset().play();
   } else {
@@ -604,13 +575,9 @@ function openEnvelope(){
     liftAnimating = true;
   }
 
-  // 3. camera dolly in
   animateCameraTo(camOpen, 1.9);
-
-  // light spilling from the seal, timed to the peak of the lift
   setTimeout(()=> flashEl.classList.add('fire'), 480);
 
-  // 4 & 5. transition to invitation
   setTimeout(()=>{
     opened = true;
     stage.classList.add('hidden');
@@ -630,7 +597,6 @@ soundBtn.addEventListener('click', ()=>{
   else { music.pause(); soundBtn.classList.add('muted'); }
 });
 
-/* prevent scroll on locked stage (iOS) */
 document.getElementById('stage').addEventListener('touchmove', (e)=>{
   if(body.classList.contains('locked')) e.preventDefault();
 }, {passive:false});
