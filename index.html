@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>N &amp; M — 22 September 2026</title>
+<meta name="theme-color" content="#14110F" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#141110;
+    --ink-soft:#1d1916;
+    --bone:#efe8d9;
+    --bone-dim:#d8cfba;
+    --gold:#b6905a;
+    --gold-soft:#9c8158;
+    --hair: rgba(182,144,90,0.35);
+    --vh: 100vh;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0;
+    background:var(--ink);
+    color:var(--bone);
+    font-family:'Jost', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+  }
+  body.locked{ overflow:hidden; height:100vh; height:var(--vh); }
+  body.unlocked{ overflow-y:auto; }
+
+  h1,h2,.serif{ font-family:'Cormorant Garamond', serif; }
+
+  /* ============ STAGE (3D envelope screen) ============ */
+  #stage{
+    position:fixed; inset:0;
+    width:100%; height:100vh; height:var(--vh);
+    background:
+      radial-gradient(120% 90% at 50% 18%, #2a231c 0%, #171310 46%, #0e0b09 100%);
+    z-index:40;
+    transition: opacity 1.4s cubic-bezier(.65,0,.35,1), filter 1.4s ease;
+  }
+  #stage.hidden{
+    opacity:0;
+    filter: blur(6px);
+    pointer-events:none;
+  }
+
+  #canvas-wrap{ position:absolute; inset:0; }
+  canvas{ display:block; width:100%; height:100%; touch-action:none; }
+
+  /* fine gold corner framing — the one bold flourish */
+  .frame{
+    position:absolute; inset:18px;
+    border:1px solid var(--hair);
+    pointer-events:none;
+    z-index:2;
+  }
+  .frame::before, .frame::after{
+    content:"";
+    position:absolute;
+    width:26px; height:26px;
+    border:1px solid var(--gold);
+    opacity:.75;
+  }
+  .frame::before{ top:-1px; left:-1px; border-right:none; border-bottom:none; }
+  .frame::after{ bottom:-1px; right:-1px; border-left:none; border-top:none; }
+
+  #flash{
+    position:absolute; inset:0;
+    z-index:4;
+    pointer-events:none;
+    opacity:0;
+    background:radial-gradient(circle at 50% 52%, rgba(230,197,140,0.95) 0%, rgba(230,197,140,0.35) 32%, rgba(230,197,140,0) 62%);
+    mix-blend-mode:screen;
+  }
+  #flash.fire{
+    animation: flashburst 1.05s cubic-bezier(.3,0,.2,1) forwards;
+  }
+  @keyframes flashburst{
+    0%{ opacity:0; }
+    28%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+
+  #loader{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:18px;
+    z-index:5;
+    background:var(--ink);
+    transition:opacity .9s ease;
+  }
+  #loader.done{ opacity:0; pointer-events:none; }
+  #loader .lmark{
+    font-family:'Cormorant Garamond', serif;
+    font-size:15px;
+    letter-spacing:.5em;
+    padding-left:.5em;
+    color:var(--gold);
+  }
+  #loader .ltrack{
+    width:130px; height:1px; background:var(--hair); position:relative; overflow:hidden;
+  }
+  #loader .lfill{
+    position:absolute; left:0; top:0; height:100%; width:0%;
+    background:var(--gold);
+    transition:width .25s ease;
+  }
+
+  /* ============ INVITATION ============ */
+  #invite{
+    position:relative;
+    z-index:10;
+    background:var(--ink);
+    min-height:100vh;
+    opacity:0;
+    transform: translateY(14px);
+    transition: opacity 1.3s ease, transform 1.3s ease;
+  }
+  #invite.reveal{ opacity:1; transform:translateY(0); }
+
+  .section{
+    padding:96px 8vw 0;
+    max-width:640px;
+    margin:0 auto;
+    text-align:center;
+  }
+  .section:last-of-type{ padding-bottom:120px; }
+
+  .kicker{
+    letter-spacing:.38em;
+    font-size:10.5px;
+    color:var(--gold);
+    margin:0 0 22px;
+  }
+
+  .hero .names{
+    font-size:clamp(52px,15vw,84px);
+    font-weight:300;
+    margin:0;
+    line-height:1;
+    color:var(--bone);
+  }
+  .hero .tie{ color:var(--gold); font-style:italic; padding:0 .18em; }
+
+  .hero .together{
+    margin:26px 0 0;
+    font-size:13px;
+    letter-spacing:.24em;
+    color:var(--bone-dim);
+    text-transform:uppercase;
+  }
+
+  .divider{
+    width:1px; height:56px;
+    background:linear-gradient(var(--hair), transparent);
+    margin:64px auto 0;
+  }
+
+  .date-block .day{
+    font-size:clamp(40px,12vw,58px);
+    margin:0;
+    letter-spacing:.02em;
+  }
+  .date-block .full{
+    margin:14px 0 0;
+    font-size:14px;
+    letter-spacing:.14em;
+    color:var(--bone-dim);
+  }
+
+  .venue h2{
+    font-size:clamp(30px,8vw,40px);
+    font-weight:400;
+    margin:0 0 10px;
+  }
+  .venue p{
+    margin:0;
+    font-size:13.5px;
+    letter-spacing:.06em;
+    color:var(--bone-dim);
+    line-height:1.9;
+  }
+
+  .cta{
+    display:inline-block;
+    margin-top:34px;
+    padding:15px 46px;
+    border:1px solid var(--gold-soft);
+    color:var(--bone);
+    text-decoration:none;
+    font-size:11.5px;
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    position:relative;
+    transition: background .5s ease, color .5s ease, border-color .5s ease;
+  }
+  .cta:hover{ background:var(--gold); color:var(--ink); border-color:var(--gold); }
+
+  .countdown{
+    display:flex;
+    justify-content:center;
+    gap:clamp(18px,6vw,44px);
+    margin-top:8px;
+  }
+  .countdown .cell{ min-width:54px; }
+  .countdown .num{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:400;
+    font-size:clamp(34px,9vw,48px);
+    color:var(--bone);
+    line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  .countdown .lbl{
+    display:block;
+    margin-top:10px;
+    font-size:9.5px;
+    letter-spacing:.24em;
+    color:var(--bone-dim);
+    text-transform:uppercase;
+  }
+  .cd-sep{
+    width:1px; height:34px; align-self:center;
+    background:var(--hair);
+  }
+
+  .closing{
+    padding:0 8vw 90px;
+    text-align:center;
+  }
+  .closing .glyph{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:22px;
+    color:var(--gold);
+    opacity:.8;
+  }
+
+  /* music toggle */
+  #sound-btn{
+    position:fixed; right:20px; bottom:20px;
+    width:46px; height:46px;
+    border-radius:50%;
+    border:1px solid var(--hair);
+    background:rgba(20,17,16,.72);
+    backdrop-filter: blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    z-index:60;
+    opacity:0;
+    transform:scale(.85);
+    transition:opacity .8s ease, transform .8s ease;
+  }
+  #sound-btn.show{ opacity:1; transform:scale(1); }
+  #sound-btn svg{ width:17px; height:17px; }
+  #sound-btn .bar{
+    width:2px; background:var(--gold); margin:0 1px; display:inline-block;
+    animation: eq 1.1s ease-in-out infinite;
+  }
+  #sound-btn.muted .bar{ animation-play-state: paused; opacity:.35; }
+  .bar:nth-child(1){ height:6px; animation-delay:0s; }
+  .bar:nth-child(2){ height:12px; animation-delay:.15s; }
+  .bar:nth-child(3){ height:8px; animation-delay:.3s; }
+  @keyframes eq{ 0%,100%{ transform:scaleY(.5);} 50%{ transform:scaleY(1);} }
+
+  @media (prefers-reduced-motion: reduce){
+    #tap-hint span, #sound-btn .bar { animation:none !important; }
+  }
+</style>
+</head>
+<body class="locked">
+
+  <!-- ================= 3D ENVELOPE STAGE ================= -->
+  <div id="stage">
+    <div id="canvas-wrap"></div>
+    <div class="frame"></div>
+    <div id="flash"></div>
+    <div id="loader">
+      <div class="lmark">N&nbsp;~&nbsp;M</div>
+      <div class="ltrack"><div class="lfill" id="lfill"></div></div>
+    </div>
+  </div>
+
+  <!-- ================= INVITATION ================= -->
+  <main id="invite">
+    <section class="section hero">
+      <p class="kicker">The Wedding Of</p>
+      <h1 class="names">N<span class="tie">~</span>M</h1>
+      <p class="together">Together with their families</p>
+      <div class="divider"></div>
+    </section>
+
+    <section class="section date-block">
+      <p class="kicker">Save The Date</p>
+      <p class="day serif">22 September 2026</p>
+      <p class="full">Tuesday · Evening</p>
+      <div class="divider"></div>
+    </section>
+
+    <section class="section venue">
+      <p class="kicker">The Venue</p>
+      <h2 class="serif">Princess Garden Hall</h2>
+      <p>Damanhour, Al Beheira Governorate<br>Egypt</p>
+      <a class="cta" id="map-btn" href="#" target="_blank" rel="noopener">View Location</a>
+      <div class="divider"></div>
+    </section>
+
+    <section class="section countdown-block">
+      <p class="kicker">Counting Down</p>
+      <div class="countdown" id="countdown">
+        <div class="cell"><span class="num" id="cd-d">00</span><span class="lbl">Days</span></div>
+        <div class="cd-sep"></div>
+        <div class="cell"><span class="num" id="cd-h">00</span><span class="lbl">Hours</span></div>
+        <div class="cd-sep"></div>
+        <div class="cell"><span class="num" id="cd-m">00</span><span class="lbl">Minutes</span></div>
+        <div class="cd-sep"></div>
+        <div class="cell"><span class="num" id="cd-s">00</span><span class="lbl">Seconds</span></div>
+      </div>
+    </section>
+
+    <div class="closing">
+      <span class="glyph">With love, N &amp; M</span>
+    </div>
+  </main>
+
+  <button id="sound-btn" aria-label="Toggle music">
+    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+  </button>
+
+  <audio id="bg-music" src="/music/wedding-music.mp3" loop preload="auto"></audio>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+
+/* ---------- Google Maps link ---------- */
+document.getElementById('map-btn').href =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("Princess Garden Hall, Damanhour, Al Beheira, Egypt");
+
+/* ---------- Countdown ---------- */
+const WEDDING_DATE = new Date("2026-09-22T18:00:00+02:00").getTime();
+function tick(){
+  const now = Date.now();
+  let diff = Math.max(0, WEDDING_DATE - now);
+  const d = Math.floor(diff/86400000);
+  const h = Math.floor(diff%86400000/3600000);
+  const m = Math.floor(diff%3600000/60000);
+  const s = Math.floor(diff%60000/1000);
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('cd-d').textContent = pad(d);
+  document.getElementById('cd-h').textContent = pad(h);
+  document.getElementById('cd-m').textContent = pad(m);
+  document.getElementById('cd-s').textContent = pad(s);
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- viewport height fix (mobile) ---------- */
+function setVH(){ document.documentElement.style.setProperty('--vh', window.innerHeight+'px'); }
+setVH(); window.addEventListener('resize', setVH);
+
+/* ---------- Three.js stage ---------- */
+const wrap = document.getElementById('canvas-wrap');
+const stage = document.getElementById('stage');
+const loaderEl = document.getElementById('loader');
+const lfill = document.getElementById('lfill');
+const flashEl = document.getElementById('flash');
+const body = document.body;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x14110f, 0.045);
+
+let modelReady = false;
+let opened = false;
+let opening = false;
+
+const camera = new THREE.PerspectiveCamera(32, window.innerWidth/window.innerHeight, 0.1, 100);
+const camHome = new THREE.Vector3(0, 0.35, 6.4);
+const camOpen = new THREE.Vector3(0, 0.15, 3.55);
+
+// the envelope is a wide landscape card — on a narrow phone screen the camera
+// needs to sit closer (or the card reads small and lost in negative space).
+function tuneCameraForViewport(){
+  const aspect = window.innerWidth / window.innerHeight;
+  const zoomFactor = aspect < 0.62 ? 0.66 : aspect < 0.85 ? 0.8 : 1;
+  camHome.set(0, 0.32, 6.4 * zoomFactor);
+  camOpen.set(0, 0.14, 3.4 * zoomFactor);
+  if(!opening && !opened) camera.position.copy(camHome);
+}
+tuneCameraForViewport();
+camera.lookAt(0,0,0);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+wrap.appendChild(renderer.domElement);
+
+/* lighting — warm, cinematic, single key + soft fill */
+const key = new THREE.DirectionalLight(0xf3d9a6, 2.4);
+key.position.set(2.6, 4.2, 3.2);
+key.castShadow = true;
+key.shadow.mapSize.set(1024,1024);
+key.shadow.radius = 6;
+key.shadow.camera.near = 1; key.shadow.camera.far = 12;
+scene.add(key);
+
+const rim = new THREE.DirectionalLight(0xb6905a, 1.1);
+rim.position.set(-3, 2, -3);
+scene.add(rim);
+
+const fill = new THREE.AmbientLight(0x3a2f22, 0.9);
+scene.add(fill);
+
+/* soft shadow-catcher */
+const shadowMat = new THREE.ShadowMaterial({ opacity:0.35 });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(30,30), shadowMat);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -1.15;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* envelope group */
+const envelopeGroup = new THREE.Group();
+scene.add(envelopeGroup);
+
+let mixer = null;
+let openClipAction = null;
+let flapNode = null;
+
+const draco = new DRACOLoader();
+draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+const loader = new GLTFLoader();
+loader.setDRACOLoader(draco);
+
+loader.load(
+  '/models/envelope.glb',
+  (gltf) => {
+    const model = gltf.scene;
+    model.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow = true;
+        o.receiveShadow = true;
+        if(/flap|lid|top|seal/i.test(o.name)) flapNode = o;
+      }
+    });
+
+    // normalize scale/position so it fills the frame nicely
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const center = new THREE.Vector3(); box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 2.6 / maxDim;
+    model.scale.setScalar(scale);
+    model.position.sub(center.multiplyScalar(scale));
+
+    envelopeGroup.add(model);
+
+    if(gltf.animations && gltf.animations.length){
+      mixer = new THREE.AnimationMixer(model);
+      const openClip = gltf.animations.find(c=>/open/i.test(c.name)) || gltf.animations[0];
+      openClipAction = mixer.clipAction(openClip);
+      openClipAction.clampWhenFinished = true;
+      openClipAction.loop = THREE.LoopOnce;
+    }
+
+    modelReady = true;
+    loaderEl.classList.add('done');
+  },
+  (xhr) => {
+    if(xhr.total){
+      lfill.style.width = Math.min(100,(xhr.loaded/xhr.total)*100) + '%';
+    }
+  },
+  (err) => {
+    console.warn('Envelope model failed to load — replace /models/envelope.glb', err);
+    loaderEl.classList.add('done');
+  }
+);
+
+/* idle animation state */
+const clock = new THREE.Clock();
+let idleT = 0;
+
+/* simple tween helper */
+function lerp(a,b,t){ return a + (b-a)*t; }
+let camT = 0, camAnimating = false, camFrom = camHome.clone(), camTo = camHome.clone();
+let camDuration = 1;
+
+let liftAnimating = false, liftT = 0, liftDuration = 1.05;
+let liftFrom = { rx:0, ry:0, y:0, s:1 };
+let liftTo   = { rx:0, ry:0, y:0, s:1 };
+
+function animateCameraTo(target, duration){
+  camFrom.copy(camera.position);
+  camTo.copy(target);
+  camDuration = duration;
+  camT = 0;
+  camAnimating = true;
+}
+
+function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+
+function render(){
+  requestAnimationFrame(render);
+  const dt = clock.getDelta();
+  idleT += dt;
+
+  if(!opened && !opening){
+    envelopeGroup.position.y = Math.sin(idleT*0.9) * 0.06;
+    envelopeGroup.rotation.y = Math.sin(idleT*0.5) * 0.12;
+    envelopeGroup.rotation.x = Math.sin(idleT*0.4) * 0.02;
+  } else if(liftAnimating){
+    liftT += dt / liftDuration;
+    const t = Math.min(1, liftT);
+    const e = easeInOutCubic(t);
+    envelopeGroup.rotation.x = lerp(liftFrom.rx, liftTo.rx, e);
+    envelopeGroup.rotation.y = lerp(liftFrom.ry, liftTo.ry, e);
+    envelopeGroup.position.y = lerp(liftFrom.y, liftTo.y, e);
+    const s = lerp(liftFrom.s, liftTo.s, Math.sin(e*Math.PI)); // bump up then settle
+    envelopeGroup.scale.setScalar(s);
+    if(t>=1) liftAnimating = false;
+  }
+
+  if(mixer) mixer.update(dt);
+
+  if(camAnimating){
+    camT += dt / camDuration;
+    const t = Math.min(1, camT);
+    camera.position.lerpVectors(camFrom, camTo, easeInOutCubic(t));
+    if(t>=1) camAnimating = false;
+  }
+  camera.lookAt(0, -0.05, 0);
+
+  renderer.render(scene, camera);
+}
+render();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  tuneCameraForViewport();
+});
+
+/* ---------- Open interaction ---------- */
+const music = document.getElementById('bg-music');
+const soundBtn = document.getElementById('sound-btn');
+let musicOn = true;
+
+function fadeAudioIn(el, target=0.55, ms=2200){
+  el.volume = 0;
+  const steps = 30;
+  let i = 0;
+  const iv = setInterval(()=>{
+    i++;
+    el.volume = Math.min(target, (target/steps)*i);
+    if(i>=steps) clearInterval(iv);
+  }, ms/steps);
+}
+
+function openEnvelope(){
+  if(opened || opening || !modelReady) return;
+  opening = true;
+
+  // 1. music
+  music.play().then(()=> fadeAudioIn(music)).catch(()=>{});
+
+  // 2. opening animation — embedded clip if the GLB has one, otherwise a
+  //    gentle lift-and-tilt of the whole envelope (this asset is a single
+  //    closed card with no separate flap geometry).
+  if(openClipAction){
+    openClipAction.reset().play();
+  } else {
+    liftFrom = {
+      rx: envelopeGroup.rotation.x,
+      ry: envelopeGroup.rotation.y,
+      y:  envelopeGroup.position.y,
+      s:  envelopeGroup.scale.x
+    };
+    liftTo = { rx: -0.34, ry: liftFrom.ry + 0.5, y: liftFrom.y + 0.22, s: 1.1 };
+    liftT = 0;
+    liftAnimating = true;
+  }
+
+  // 3. camera dolly in
+  animateCameraTo(camOpen, 1.9);
+
+  // light spilling from the seal, timed to the peak of the lift
+  setTimeout(()=> flashEl.classList.add('fire'), 480);
+
+  // 4 & 5. transition to invitation
+  setTimeout(()=>{
+    opened = true;
+    stage.classList.add('hidden');
+    body.classList.remove('locked');
+    body.classList.add('unlocked');
+    document.getElementById('invite').classList.add('reveal');
+    soundBtn.classList.add('show');
+  }, 1500);
+}
+
+document.getElementById('canvas-wrap').addEventListener('click', openEnvelope);
+document.getElementById('canvas-wrap').addEventListener('touchend', (e)=>{ e.preventDefault(); openEnvelope(); }, {passive:false});
+
+soundBtn.addEventListener('click', ()=>{
+  musicOn = !musicOn;
+  if(musicOn){ music.play().catch(()=>{}); soundBtn.classList.remove('muted'); }
+  else { music.pause(); soundBtn.classList.add('muted'); }
+});
+
+/* prevent scroll on locked stage (iOS) */
+document.getElementById('stage').addEventListener('touchmove', (e)=>{
+  if(body.classList.contains('locked')) e.preventDefault();
+}, {passive:false});
+</script>
+</body>
+</html>
